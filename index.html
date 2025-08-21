@@ -187,6 +187,7 @@
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
             padding: 30px;
+            min-height: 200px; /* Tambahkan min-height untuk debugging */
         }
 
         .package-card {
@@ -763,6 +764,7 @@
                     </div>
                 </div>
             </div>
+        </div>
 
         <div class="stats">
             <div class="stat-item">
@@ -837,6 +839,7 @@
     </div>
 
     <script>
+        // Data packages
         const packages = {
             'akrab-big': {
                 name: '🔥 AKRAB BIG',
@@ -932,17 +935,23 @@
 
         let currentFilter = 'all';
         let isAdminLoggedIn = false;
-        let pendingStockChange = null; // Menyimpan perubahan yang akan dikonfirmasi
+        let pendingStockChange = null;
 
-        // Kredensial admin (dalam implementasi nyata, sebaiknya di backend)
+        // Admin credentials
         const ADMIN_CREDENTIALS = {
             username: 'admin_hosting',
             password: 'XL_Axis_2025!'
         };
 
         function renderPackages() {
+            console.log('Rendering packages...'); // Debug log
             const grid = document.getElementById('package-grid');
             const noResults = document.getElementById('no-results');
+            
+            if (!grid) {
+                console.error('Package grid element not found!');
+                return;
+            }
             
             grid.innerHTML = '';
             let visibleCount = 0;
@@ -954,6 +963,8 @@
                     visibleCount++;
                 }
             });
+
+            console.log(`Rendered ${visibleCount} packages`); // Debug log
 
             if (visibleCount === 0) {
                 noResults.style.display = 'block';
@@ -967,7 +978,8 @@
         }
 
         function shouldShowPackage(id, pkg) {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
             const matchesSearch = pkg.name.toLowerCase().includes(searchTerm) || 
                                 pkg.price.toLowerCase().includes(searchTerm);
 
@@ -1032,29 +1044,42 @@
             const availablePackages = Object.values(packages).filter(pkg => pkg.stock).length;
             const unavailablePackages = totalPackages - availablePackages;
 
-            document.getElementById('total-packages').textContent = totalPackages;
-            document.getElementById('available-packages').textContent = availablePackages;
-            document.getElementById('unavailable-packages').textContent = unavailablePackages;
+            const totalEl = document.getElementById('total-packages');
+            const availableEl = document.getElementById('available-packages');
+            const unavailableEl = document.getElementById('unavailable-packages');
+
+            if (totalEl) totalEl.textContent = totalPackages;
+            if (availableEl) availableEl.textContent = availablePackages;
+            if (unavailableEl) unavailableEl.textContent = unavailablePackages;
         }
 
         function showAdminLogin() {
             if (isAdminLoggedIn) {
                 toggleAdmin();
             } else {
-                document.getElementById('login-modal').style.display = 'block';
-                document.getElementById('admin-username').focus();
+                const modal = document.getElementById('login-modal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    const usernameInput = document.getElementById('admin-username');
+                    if (usernameInput) usernameInput.focus();
+                }
             }
         }
 
         function closeLoginModal() {
-            document.getElementById('login-modal').style.display = 'none';
+            const modal = document.getElementById('login-modal');
+            if (modal) modal.style.display = 'none';
             clearLoginForm();
         }
 
         function clearLoginForm() {
-            document.getElementById('admin-username').value = '';
-            document.getElementById('admin-password').value = '';
-            document.getElementById('login-message').innerHTML = '';
+            const username = document.getElementById('admin-username');
+            const password = document.getElementById('admin-password');
+            const message = document.getElementById('login-message');
+            
+            if (username) username.value = '';
+            if (password) password.value = '';
+            if (message) message.innerHTML = '';
         }
 
         function handleLogin(event) {
@@ -1066,15 +1091,17 @@
             const messageDiv = document.getElementById('login-message');
             
             // Disable button sementara
-            loginBtn.disabled = true;
-            loginBtn.textContent = '🔄 Memverifikasi...';
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = '🔄 Memverifikasi...';
+            }
             
             // Simulasi delay untuk keamanan
             setTimeout(() => {
                 if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
                     // Login berhasil
                     isAdminLoggedIn = true;
-                    messageDiv.innerHTML = '<div class="success-message">✅ Login berhasil! Mengalihkan...</div>';
+                    if (messageDiv) messageDiv.innerHTML = '<div class="success-message">✅ Login berhasil! Mengalihkan...</div>';
                     
                     setTimeout(() => {
                         closeLoginModal();
@@ -1083,48 +1110,59 @@
                     }, 1000);
                 } else {
                     // Login gagal
-                    messageDiv.innerHTML = '<div class="error-message">❌ Username atau password salah!</div>';
+                    if (messageDiv) messageDiv.innerHTML = '<div class="error-message">❌ Username atau password salah!</div>';
                     
                     // Reset form after delay
                     setTimeout(() => {
-                        document.getElementById('admin-password').value = '';
-                        document.getElementById('admin-password').focus();
+                        const passwordInput = document.getElementById('admin-password');
+                        if (passwordInput) {
+                            passwordInput.value = '';
+                            passwordInput.focus();
+                        }
                     }, 1500);
                 }
                 
                 // Re-enable button
-                loginBtn.disabled = false;
-                loginBtn.textContent = '🔓 Login Admin';
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔓 Login Admin';
+                }
             }, 1500);
         }
 
         function showAdminInterface() {
-            document.getElementById('admin-status').classList.add('show');
-            document.getElementById('logout-btn').style.display = 'inline-block';
+            const status = document.getElementById('admin-status');
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            if (status) status.classList.add('show');
+            if (logoutBtn) logoutBtn.style.display = 'inline-block';
             
             const adminToggle = document.querySelector('.admin-toggle');
-            adminToggle.textContent = 'Admin Panel';
-            adminToggle.style.background = '#28a745';
+            if (adminToggle) {
+                adminToggle.textContent = 'Admin Panel';
+                adminToggle.style.background = '#28a745';
+            }
         }
 
         function logout() {
             isAdminLoggedIn = false;
-            document.getElementById('admin-status').classList.remove('show');
-            document.getElementById('logout-btn').style.display = 'none';
-            document.getElementById('admin-panel').classList.remove('show');
+            
+            const status = document.getElementById('admin-status');
+            const logoutBtn = document.getElementById('logout-btn');
+            const panel = document.getElementById('admin-panel');
+            
+            if (status) status.classList.remove('show');
+            if (logoutBtn) logoutBtn.style.display = 'none';
+            if (panel) panel.classList.remove('show');
             
             const adminToggle = document.querySelector('.admin-toggle');
-            adminToggle.textContent = 'Admin Panel';
-            adminToggle.style.background = '#6c757d';
+            if (adminToggle) {
+                adminToggle.textContent = 'Admin Panel';
+                adminToggle.style.background = '#6c757d';
+            }
             
             // Show logout confirmation
-            const messageDiv = document.createElement('div');
-            messageDiv.innerHTML = '<div style="position: fixed; top: 20px; right: 20px; background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 1001;">✅ Logout berhasil!</div>';
-            document.body.appendChild(messageDiv);
-            
-            setTimeout(() => {
-                document.body.removeChild(messageDiv);
-            }, 3000);
+            showNotification('Logout berhasil!');
         }
 
         function toggleAdmin() {
@@ -1134,35 +1172,19 @@
             }
             
             const panel = document.getElementById('admin-panel');
-            panel.classList.toggle('show');
-            
-            if (panel.classList.contains('show')) {
-                renderAdminControls();
+            if (panel) {
+                panel.classList.toggle('show');
+                
+                if (panel.classList.contains('show')) {
+                    renderAdminControls();
+                }
             }
         }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const loginModal = document.getElementById('login-modal');
-            const confirmModal = document.getElementById('confirmation-modal');
-            
-            if (event.target === loginModal) {
-                closeLoginModal();
-            } else if (event.target === confirmModal) {
-                cancelConfirmation();
-            }
-        }
-
-        // Handle ESC key
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeLoginModal();
-                cancelConfirmation();
-            }
-        });
 
         function renderAdminControls() {
             const controls = document.getElementById('stock-controls');
+            if (!controls) return;
+            
             controls.innerHTML = '';
 
             Object.entries(packages).forEach(([id, pkg]) => {
@@ -1201,31 +1223,40 @@
         }
 
         function showStockConfirmation() {
+            if (!pendingStockChange) return;
+            
             const pkg = packages[pendingStockChange.packageId];
             const modal = document.getElementById('confirmation-modal');
             
+            if (!modal) return;
+            
             // Update konten modal
-            document.getElementById('confirm-package-name').textContent = pkg.name + ' (' + pkg.price + ')';
+            const nameEl = document.getElementById('confirm-package-name');
+            if (nameEl) nameEl.textContent = pkg.name + ' (' + pkg.price + ')';
             
             const statusFrom = document.getElementById('confirm-status-from');
             const statusTo = document.getElementById('confirm-status-to');
             
             // Status lama
-            if (pendingStockChange.oldStatus) {
-                statusFrom.textContent = '✅ Tersedia';
-                statusFrom.className = 'status-from status-available';
-            } else {
-                statusFrom.textContent = '❌ Habis';
-                statusFrom.className = 'status-from status-unavailable';
+            if (statusFrom) {
+                if (pendingStockChange.oldStatus) {
+                    statusFrom.textContent = '✅ Tersedia';
+                    statusFrom.className = 'status-from status-available';
+                } else {
+                    statusFrom.textContent = '❌ Habis';
+                    statusFrom.className = 'status-from status-unavailable';
+                }
             }
             
             // Status baru
-            if (pendingStockChange.newStatus) {
-                statusTo.textContent = '✅ Tersedia';
-                statusTo.className = 'status-to status-available';
-            } else {
-                statusTo.textContent = '❌ Habis';
-                statusTo.className = 'status-to status-unavailable';
+            if (statusTo) {
+                if (pendingStockChange.newStatus) {
+                    statusTo.textContent = '✅ Tersedia';
+                    statusTo.className = 'status-to status-available';
+                } else {
+                    statusTo.textContent = '❌ Habis';
+                    statusTo.className = 'status-to status-unavailable';
+                }
             }
             
             // Tampilkan modal
@@ -1252,7 +1283,8 @@
 
         function cancelConfirmation() {
             // Tutup modal
-            document.getElementById('confirmation-modal').style.display = 'none';
+            const modal = document.getElementById('confirmation-modal');
+            if (modal) modal.style.display = 'none';
             
             // Reset toggle yang dibatalkan
             if (pendingStockChange) {
@@ -1272,7 +1304,10 @@
             document.body.appendChild(notification);
             
             setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
+                const notifElement = notification.querySelector('div');
+                if (notifElement) {
+                    notifElement.style.animation = 'slideOut 0.3s ease';
+                }
                 setTimeout(() => {
                     if (document.body.contains(notification)) {
                         document.body.removeChild(notification);
@@ -1281,8 +1316,39 @@
             }, 2500);
         }
 
-        // Initialize
-        renderPackages();
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const loginModal = document.getElementById('login-modal');
+            const confirmModal = document.getElementById('confirmation-modal');
+            
+            if (event.target === loginModal) {
+                closeLoginModal();
+            } else if (event.target === confirmModal) {
+                cancelConfirmation();
+            }
+        }
+
+        // Handle ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeLoginModal();
+                cancelConfirmation();
+            }
+        });
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...'); // Debug log
+            renderPackages();
+        });
+
+        // Fallback initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', renderPackages);
+        } else {
+            // DOM already loaded
+            renderPackages();
+        }
     </script>
 </body>
 </html>
