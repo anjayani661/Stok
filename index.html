@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XL AXIS Stock Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: white;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 50px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .area-filter {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .area-btn {
+            padding: 12px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .area-btn:hover,
+        .area-btn.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .admin-controls {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-top: 1px solid #e1e8ed;
+        }
+
+        .stock-toggle {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .package-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            min-height: 200px; /* Tambahkan min-height untuk debugging */
+        }
+
+        .package-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .package-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+        }
+
+        .package-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .package-card.promo {
+            position: relative;
+            animation: pulse 2s infinite;
+            border: 2px solid #ff6b6b;
+        }
+
+        .package-card.promo::before {
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #ff6b6b);
+            height: 6px;
+        }
+
+        .promo-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            z-index: 10;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(255, 107, 107, 0.7);
+            }
+            70% {
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 10px rgba(255, 107, 107, 0);
+            }
+            100% {
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(255, 107, 107, 0);
+            }
+        }
+
+        .package-card.out-of-stock {
+            opacity: 0.6;
+            background: #f8f9fa;
+        }
+
+        .package-card.out-of-stock::before {
+            background: #dc3545;
+        }
+
+        .package-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .package-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .package-price {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .stock-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .stock-available {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .stock-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .area-list {
+            list-style: none;
+        }
+
+        .area-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .area-item:last-child {
+            border-bottom: none;
+        }
+
+        .area-name {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .area-quota {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        .stats {
+            background: #667eea;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-item p {
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .area-filter {
+                justify-content: center;
+            }
+
+            .package-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+
+        .admin-panel {
+            display: none;
+        }
+
+        .admin-panel.show {
+            display: block;
+        }
+
+        .admin-toggle {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .admin-toggle:hover {
+            background: #495057;
+        }
+
+        .login-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .login-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border: none;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .admin-status {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .admin-status.show {
+            display: inline-block;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .confirmation-modal {
+            display: none;
+            position: fixed;
+            z-index: 1100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        .confirmation-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 0;
+            border: none;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            animation: confirmationSlideIn 0.3s ease;
+        }
+
+        @keyframes confirmationSlideIn {
+            from {
+                transform: translateY(-50px) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .confirmation-header {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        .confirmation-header h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+
+        .confirmation-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .confirmation-body {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .package-info {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .package-info h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .status-change {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+
+        .status-from {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status-to {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status-available {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .confirmation-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .confirm-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .confirm-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+
+        .cancel-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .cancel-btn:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+        }
+
+        .warning-text {
+            color: #856404;
+            background: #fff3cd;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📦 XL AXIS Stock Checker</h1>
+            <p>Cek ketersediaan paket kuota XL | AXIS | LIVE ON</p>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div id="confirmation-modal" class="confirmation-modal">
+            <div class="confirmation-content">
+                <div class="confirmation-header">
+                    <h3>⚠️ Konfirmasi Perubahan</h3>
+                    <p>Pastikan perubahan yang akan dilakukan sudah benar</p>
+                </div>
+                <div class="confirmation-body">
+                    <div class="package-info">
+                        <h4 id="confirm-package-name">Nama Paket</h4>
+                        <div class="status-change">
+                            <span id="confirm-status-from" class="status-from">Status Lama</span>
+                            <span style="font-size: 1.2rem;">➡️</span>
+                            <span id="confirm-status-to" class="status-to">Status Baru</span>
+                        </div>
+                    </div>
+                    <div class="warning-text">
+                        <strong>⚠️ Peringatan:</strong><br>
+                        Perubahan ini akan langsung terlihat oleh semua pengunjung website dan tidak bisa di-undo.
+                    </div>
+                    <div class="confirmation-buttons">
+                        <button class="cancel-btn" onclick="cancelConfirmation()">
+                            ❌ Batal
+                        </button>
+                        <button class="confirm-btn" onclick="confirmStockChange()">
+                            ✅ Konfirmasi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <h3 id="total-packages">9</h3>
+                <p>Total Paket</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="available-packages">0</h3>
+                <p>Tersedia</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="unavailable-packages">0</h3>
+                <p>Habis</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="🔍 Cari paket..." onkeyup="filterPackages()">
+            </div>
+            <div class="area-filter">
+                <button class="area-btn active" onclick="filterByArea('all')">Semua Area</button>
+                <button class="area-btn" onclick="filterByArea('1')">Area 1</button>
+                <button class="area-btn" onclick="filterByArea('2')">Area 2</button>
+                <button class="area-btn" onclick="filterByArea('3')">Area 3</button>
+                <button class="area-btn" onclick="filterByArea('4')">Area 4</button>
+            </div>
+            <button class="admin-toggle" onclick="showAdminLogin()">Admin Panel</button>
+            <span class="admin-status" id="admin-status">🔐 Admin Mode</span>
+            <button class="logout-btn" id="logout-btn" style="display: none;" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Login Modal -->
+        <div id="login-modal" class="login-modal">
+            <div class="login-content">
+                <button class="close-btn" onclick="closeLoginModal()">&times;</button>
+                <div class="login-header">
+                    <h2>🔐 Admin Login</h2>
+                    <p>Masukkan kredensial admin untuk mengakses kontrol stok</p>
+                </div>
+                <form class="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="admin-username">Username</label>
+                        <input type="text" id="admin-username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-password">Password</label>
+                        <input type="password" id="admin-password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="login-btn" id="login-btn">
+                        🔓 Login Admin
+                    </button>
+                    <div id="login-message"></div>
+                </form>
+            </div>
+        </div>
+
+        <div class="admin-panel" id="admin-panel">
+            <div class="admin-controls">
+                <h3 style="margin-bottom: 15px;">🔧 Kontrol Stok Admin</h3>
+                <div id="stock-controls"></div>
+            </div>
+        </div>
+
+        <div class="package-grid" id="package-grid">
+            <!-- Packages will be dynamically generated -->
+        </div>
+
+        <div class="no-results" id="no-results" style="display: none;">
+            <p>Tidak ada paket yang sesuai dengan pencarian Anda</p>
+        </div>
+    </div>
+
+    <script>
+        // Data packages
+        const packages = {
+            'akrab-big': {
+                name: '🔥 AKRAB BIG',
+                price: '54K',
+                areas: {
+                    1: '38 - 40 GB',
+                    2: '40 - 42 GB',
+                    3: '45 - 47 GB',
+                    4: '55 - 57 GB'
+                },
+                stock: true,
+                isPromo: true,
+                promoText: 'Promo Spesial!'
+            },
+            'super-mini': {
+                name: '✨ Super Mini',
+                price: '42K',
+                areas: {
+                    1: '13 - 15 GB',
+                    2: '15 - 17 GB',
+                    3: '20 - 22 GB',
+                    4: '30 - 32 GB'
+                },
+                stock: true
+            },
+            'mini': {
+                name: '✨ Mini',
+                price: '51K',
+                areas: {
+                    1: '31.75 - 33.75 GB',
+                    2: '33.75 - 35.75 GB',
+                    3: '38.75 - 40.75 GB',
+                    4: '48.75 - 50.75 GB'
+                },
+                stock: true
+            },
+            'big': {
+                name: '✨ Big',
+                price: '57K',
+                areas: {
+                    1: '38 - 40 GB',
+                    2: '40 - 42 GB',
+                    3: '45 - 47 GB',
+                    4: '55 - 57 GB'
+                },
+                stock: true
+            },
+            'big-plus': {
+                name: '✨ Big Plus',
+                price: '62K',
+                areas: {
+                    1: '35 GB',
+                    2: '38 GB',
+                    3: '49 GB',
+                    4: '73 GB'
+                },
+                stock: false
+            },
+            'jumbo-v2': {
+                name: '✨ Jumbo V2',
+                price: '70K',
+                areas: {
+                    1: '50.5 - 52.5 GB',
+                    2: '52.5 - 54.5 GB',
+                    3: '57.5 - 59.5 GB',
+                    4: '67.5 - 69.5 GB'
+                },
+                stock: true
+            },
+            'jumbo-v1': {
+                name: '✨ Jumbo V1',
+                price: '80K',
+                areas: {
+                    1: '65 GB',
+                    2: '70 GB',
+                    3: '83 GB',
+                    4: '123 GB'
+                },
+                stock: false
+            },
+            'mega-big': {
+                name: '✨ Mega Big',
+                price: '89K',
+                areas: {
+                    1: '88 - 90 GB',
+                    2: '90 - 92 GB',
+                    3: '95 - 97 GB',
+                    4: '105 - 107 GB'
+                },
+                stock: true
+            }
+        };
+
+        let currentFilter = 'all';
+        let isAdminLoggedIn = false;
+        let pendingStockChange = null;
+
+        // Admin credentials
+        const ADMIN_CREDENTIALS = {
+            username: 'admin_hosting',
+            password: 'XL_Axis_2025!'
+        };
+
+        function renderPackages() {
+            console.log('Rendering packages...'); // Debug log
+            const grid = document.getElementById('package-grid');
+            const noResults = document.getElementById('no-results');
+            
+            if (!grid) {
+                console.error('Package grid element not found!');
+                return;
+            }
+            
+            grid.innerHTML = '';
+            let visibleCount = 0;
+
+            Object.entries(packages).forEach(([id, pkg]) => {
+                if (shouldShowPackage(id, pkg)) {
+                    const card = createPackageCard(id, pkg);
+                    grid.appendChild(card);
+                    visibleCount++;
+                }
+            });
+
+            console.log(`Rendered ${visibleCount} packages`); // Debug log
+
+            if (visibleCount === 0) {
+                noResults.style.display = 'block';
+                grid.style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                grid.style.display = 'grid';
+            }
+
+            updateStats();
+        }
+
+        function shouldShowPackage(id, pkg) {
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const matchesSearch = pkg.name.toLowerCase().includes(searchTerm) || 
+                                pkg.price.toLowerCase().includes(searchTerm);
+
+            if (currentFilter === 'all') {
+                return matchesSearch;
+            }
+
+            return matchesSearch && pkg.areas[currentFilter];
+        }
+
+        function createPackageCard(id, pkg) {
+            const card = document.createElement('div');
+            card.className = `package-card ${!pkg.stock ? 'out-of-stock' : ''} ${pkg.isPromo ? 'promo' : ''}`;
+            
+            const areasToShow = currentFilter === 'all' 
+                ? Object.entries(pkg.areas)
+                : [[currentFilter, pkg.areas[currentFilter]]].filter(([area, quota]) => quota);
+
+            const promoBadge = pkg.isPromo ? `<div class="promo-badge">${pkg.promoText}</div>` : '';
+
+            card.innerHTML = `
+                ${promoBadge}
+                <div class="package-header">
+                    <div class="package-name">${pkg.name}</div>
+                    <div class="package-price">${pkg.price}</div>
+                </div>
+                <div class="stock-status ${pkg.stock ? 'stock-available' : 'stock-unavailable'}">
+                    ${pkg.stock ? '✅ Tersedia' : '❌ Habis'}
+                </div>
+                ${pkg.isPromo ? '<div style="color: #ff6b6b; font-weight: 600; margin-bottom: 15px; font-size: 0.9rem;">⚡ Stok terbatas, buruan amankan!</div>' : ''}
+                <ul class="area-list">
+                    ${areasToShow.map(([area, quota]) => `
+                        <li class="area-item">
+                            <span class="area-name">🔹 Area ${area}</span>
+                            <span class="area-quota">${quota}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+
+            return card;
+        }
+
+        function filterByArea(area) {
+            currentFilter = area;
+            
+            // Update active button
+            document.querySelectorAll('.area-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderPackages();
+        }
+
+        function filterPackages() {
+            renderPackages();
+        }
+
+        function updateStats() {
+            const totalPackages = Object.keys(packages).length;
+            const availablePackages = Object.values(packages).filter(pkg => pkg.stock).length;
+            const unavailablePackages = totalPackages - availablePackages;
+
+            const totalEl = document.getElementById('total-packages');
+            const availableEl = document.getElementById('available-packages');
+            const unavailableEl = document.getElementById('unavailable-packages');
+
+            if (totalEl) totalEl.textContent = totalPackages;
+            if (availableEl) availableEl.textContent = availablePackages;
+            if (unavailableEl) unavailableEl.textContent = unavailablePackages;
+        }
+
+        function showAdminLogin() {
+            if (isAdminLoggedIn) {
+                toggleAdmin();
+            } else {
+                const modal = document.getElementById('login-modal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    const usernameInput = document.getElementById('admin-username');
+                    if (usernameInput) usernameInput.focus();
+                }
+            }
+        }
+
+        function closeLoginModal() {
+            const modal = document.getElementById('login-modal');
+            if (modal) modal.style.display = 'none';
+            clearLoginForm();
+        }
+
+        function clearLoginForm() {
+            const username = document.getElementById('admin-username');
+            const password = document.getElementById('admin-password');
+            const message = document.getElementById('login-message');
+            
+            if (username) username.value = '';
+            if (password) password.value = '';
+            if (message) message.innerHTML = '';
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            const messageDiv = document.getElementById('login-message');
+            
+            // Disable button sementara
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = '🔄 Memverifikasi...';
+            }
+            
+            // Simulasi delay untuk keamanan
+            setTimeout(() => {
+                if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                    // Login berhasil
+                    isAdminLoggedIn = true;
+                    if (messageDiv) messageDiv.innerHTML = '<div class="success-message">✅ Login berhasil! Mengalihkan...</div>';
+                    
+                    setTimeout(() => {
+                        closeLoginModal();
+                        showAdminInterface();
+                        toggleAdmin();
+                    }, 1000);
+                } else {
+                    // Login gagal
+                    if (messageDiv) messageDiv.innerHTML = '<div class="error-message">❌ Username atau password salah!</div>';
+                    
+                    // Reset form after delay
+                    setTimeout(() => {
+                        const passwordInput = document.getElementById('admin-password');
+                        if (passwordInput) {
+                            passwordInput.value = '';
+                            passwordInput.focus();
+                        }
+                    }, 1500);
+                }
+                
+                // Re-enable button
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '🔓 Login Admin';
+                }
+            }, 1500);
+        }
+
+        function showAdminInterface() {
+            const status = document.getElementById('admin-status');
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            if (status) status.classList.add('show');
+            if (logoutBtn) logoutBtn.style.display = 'inline-block';
+            
+            const adminToggle = document.querySelector('.admin-toggle');
+            if (adminToggle) {
+                adminToggle.textContent = 'Admin Panel';
+                adminToggle.style.background = '#28a745';
+            }
+        }
+
+        function logout() {
+            isAdminLoggedIn = false;
+            
+            const status = document.getElementById('admin-status');
+            const logoutBtn = document.getElementById('logout-btn');
+            const panel = document.getElementById('admin-panel');
+            
+            if (status) status.classList.remove('show');
+            if (logoutBtn) logoutBtn.style.display = 'none';
+            if (panel) panel.classList.remove('show');
+            
+            const adminToggle = document.querySelector('.admin-toggle');
+            if (adminToggle) {
+                adminToggle.textContent = 'Admin Panel';
+                adminToggle.style.background = '#6c757d';
+            }
+            
+            // Show logout confirmation
+            showNotification('Logout berhasil!');
+        }
+
+        function toggleAdmin() {
+            if (!isAdminLoggedIn) {
+                showAdminLogin();
+                return;
+            }
+            
+            const panel = document.getElementById('admin-panel');
+            if (panel) {
+                panel.classList.toggle('show');
+                
+                if (panel.classList.contains('show')) {
+                    renderAdminControls();
+                }
+            }
+        }
+
+        function renderAdminControls() {
+            const controls = document.getElementById('stock-controls');
+            if (!controls) return;
+            
+            controls.innerHTML = '';
+
+            Object.entries(packages).forEach(([id, pkg]) => {
+                const control = document.createElement('div');
+                control.className = 'stock-toggle';
+                control.innerHTML = `
+                    <label style="flex: 1; font-weight: 600;">${pkg.name} (${pkg.price})</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${pkg.stock ? 'checked' : ''} 
+                               data-package-id="${id}"
+                               onchange="handleStockToggle(this, '${id}')">
+                        <span class="slider"></span>
+                    </label>
+                    <span style="margin-left: 10px; font-weight: 600; color: ${pkg.stock ? '#28a745' : '#dc3545'}; min-width: 80px;">
+                        ${pkg.stock ? '✅ Tersedia' : '❌ Habis'}
+                    </span>
+                `;
+                controls.appendChild(control);
+            });
+        }
+
+        function handleStockToggle(checkbox, packageId) {
+            console.log('Stock toggle clicked:', packageId, checkbox.checked); // Debug
+            toggleStock(packageId, checkbox.checked);
+        }
+
+        function toggleStock(packageId, isAvailable) {
+            if (!isAdminLoggedIn) {
+                alert('Akses ditolak! Silakan login sebagai admin terlebih dahulu.');
+                // Reset checkbox ke status sebelumnya
+                const checkbox = document.querySelector(`input[onchange*="${packageId}"]`);
+                if (checkbox) {
+                    checkbox.checked = packages[packageId].stock;
+                }
+                return;
+            }
+            
+            // Simpan informasi perubahan yang akan dilakukan
+            pendingStockChange = {
+                packageId: packageId,
+                newStatus: isAvailable,
+                oldStatus: packages[packageId].stock
+            };
+            
+            console.log('Pending stock change:', pendingStockChange); // Debug
+            
+            // Tampilkan modal konfirmasi
+            showStockConfirmation();
+        }
+
+        function showStockConfirmation() {
+            if (!pendingStockChange) return;
+            
+            const pkg = packages[pendingStockChange.packageId];
+            const modal = document.getElementById('confirmation-modal');
+            
+            if (!modal) return;
+            
+            // Update konten modal
+            const nameEl = document.getElementById('confirm-package-name');
+            if (nameEl) nameEl.textContent = pkg.name + ' (' + pkg.price + ')';
+            
+            const statusFrom = document.getElementById('confirm-status-from');
+            const statusTo = document.getElementById('confirm-status-to');
+            
+            // Status lama
+            if (statusFrom) {
+                if (pendingStockChange.oldStatus) {
+                    statusFrom.textContent = '✅ Tersedia';
+                    statusFrom.className = 'status-from status-available';
+                } else {
+                    statusFrom.textContent = '❌ Habis';
+                    statusFrom.className = 'status-from status-unavailable';
+                }
+            }
+            
+            // Status baru
+            if (statusTo) {
+                if (pendingStockChange.newStatus) {
+                    statusTo.textContent = '✅ Tersedia';
+                    statusTo.className = 'status-to status-available';
+                } else {
+                    statusTo.textContent = '❌ Habis';
+                    statusTo.className = 'status-to status-unavailable';
+                }
+            }
+            
+            // Tampilkan modal
+            modal.style.display = 'block';
+        }
+
+        function confirmStockChange() {
+            if (!pendingStockChange) {
+                console.log('No pending stock change'); // Debug
+                return;
+            }
+            
+            console.log('Confirming stock change:', pendingStockChange); // Debug
+            
+            // Lakukan perubahan stok
+            packages[pendingStockChange.packageId].stock = pendingStockChange.newStatus;
+            
+            console.log('Stock updated for', pendingStockChange.packageId, 'to', pendingStockChange.newStatus); // Debug
+            
+            // Update tampilan
+            renderPackages();
+            if (document.getElementById('admin-panel').classList.contains('show')) {
+                renderAdminControls();
+            }
+            
+            // Show success notification
+            const pkg = packages[pendingStockChange.packageId];
+            showNotification(`Stok ${pkg.name} berhasil ${pendingStockChange.newStatus ? 'diaktifkan' : 'dinonaktifkan'}`);
+            
+            // Tutup modal dan reset
+            const modal = document.getElementById('confirmation-modal');
+            if (modal) modal.style.display = 'none';
+            pendingStockChange = null;
+        }
+
+        function cancelConfirmation() {
+            console.log('Cancelling confirmation'); // Debug
+            
+            // Tutup modal
+            const modal = document.getElementById('confirmation-modal');
+            if (modal) modal.style.display = 'none';
+            
+            // Reset toggle yang dibatalkan
+            if (pendingStockChange) {
+                console.log('Resetting checkbox for:', pendingStockChange.packageId); // Debug
+                const checkbox = document.querySelector(`input[data-package-id="${pendingStockChange.packageId}"]`);
+                if (checkbox) {
+                    checkbox.checked = pendingStockChange.oldStatus;
+                    console.log('Checkbox reset to:', pendingStockChange.oldStatus); // Debug
+                } else {
+                    console.log('Checkbox not found for reset'); // Debug
+                }
+            }
+            
+            // Reset pending change
+            pendingStockChange = null;
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.innerHTML = `<div style="position: fixed; top: 20px; right: 20px; background: #667eea; color: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1001; animation: slideIn 0.3s ease;">📦 ${message}</div>`;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                const notifElement = notification.querySelector('div');
+                if (notifElement) {
+                    notifElement.style.animation = 'slideOut 0.3s ease';
+                }
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 2500);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const loginModal = document.getElementById('login-modal');
+            const confirmModal = document.getElementById('confirmation-modal');
+            
+            if (event.target === loginModal) {
+                closeLoginModal();
+            } else if (event.target === confirmModal) {
+                cancelConfirmation();
+            }
+        }
+
+        // Handle ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeLoginModal();
+                cancelConfirmation();
+            }
+        });
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...'); // Debug log
+            renderPackages();
+        });
+
+        // Fallback initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', renderPackages);
+        } else {
+            // DOM already loaded
+            renderPackages();
+        }
+    </script>
+</body>
+</html>
