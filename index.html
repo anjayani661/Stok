@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XL AXIS Stock Checker</title>
+
+    <script>
+        // ===========================================
+        // 📝 EDIT STOK DI SINI - UBAH ON/OFF
+        // ===========================================
+        const stockSettings = {
+            'AKRAB SUPER MINI': 'ON',
+            'AKRAB BIG': 'ON'      
+        };
+        // ON = Tersedia | OFF = Habis
+        // ===========================================
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* EDIT PANEL STYLES */
+        .edit-panel {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px 30px;
+            border-bottom: 3px solid rgba(255,255,255,0.2);
+        }
+
+        .edit-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .edit-header h2 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .edit-header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .edit-instructions {
+            background: rgba(255,255,255,0.15);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid rgba(255,255,255,0.4);
+        }
+
+        .edit-instructions h3 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .edit-instructions ol {
+            padding-left: 20px;
+            line-height: 1.6;
+        }
+
+        .edit-instructions li {
+            margin-bottom: 5px;
+        }
+
+        .code-location {
+            background: rgba(0,0,0,0.2);
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stock-editor {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .stock-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .stock-item:hover {
+            border-color: rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.25);
+        }
+
+        .stock-info {
+            flex: 1;
+        }
+
+        .stock-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        .stock-price {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .stock-status {
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: white;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 50px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .area-filter {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .area-btn {
+            padding: 12px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .area-btn:hover,
+        .area-btn.active {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stats {
+            background: #667eea;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-item p {
+            opacity: 0.9;
+        }
+
+        .package-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            min-height: 200px;
+        }
+
+        .package-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .package-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+        }
+
+        .package-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .package-card.promo {
+            position: relative;
+            animation: pulse 2s infinite;
+            border: 2px solid #ff6b6b;
+        }
+
+        .package-card.promo::before {
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #ff6b6b);
+            height: 6px;
+        }
+
+        .promo-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            z-index: 10;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(255, 107, 107, 0.7);
+            }
+            70% {
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 10px rgba(255, 107, 107, 0);
+            }
+            100% {
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(255, 107, 107, 0);
+            }
+        }
+
+        .package-card.out-of-stock {
+            opacity: 0.6;
+            background: #f8f9fa;
+        }
+
+        .package-card.out-of-stock::before {
+            background: #dc3545;
+        }
+
+        .package-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .package-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .package-price {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .stock-status-card {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .stock-available {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .stock-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .area-list {
+            list-style: none;
+        }
+
+        .area-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .area-item:last-child {
+            border-bottom: none;
+        }
+
+        .area-name {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .area-quota {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        .promo-text {
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .description-text {
+            color: #28a745;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .bottom-text {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #e1e8ed;
+        }
+
+        .bottom-text .highlight {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .bottom-text .action {
+            color: #28a745;
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .area-filter {
+                justify-content: center;
+            }
+
+            .package-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .edit-panel {
+                padding: 15px 20px;
+            }
+
+            .stock-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- EDIT PANEL - HIDDEN -->
+        <div class="edit-panel" style="display: none;">
+            <div class="edit-header">
+                <h2>⚙️ Edit Stok Manual - GitHub</h2>
+                <p>Untuk mengubah status stok, edit kode di bawah ini langsung di GitHub</p>
+            </div>
+
+            <div class="edit-instructions">
+                <h3>📝 Cara Edit Stok:</h3>
+                <ol>
+                    <li>Cari bagian kode <strong>"EDIT STOK DI SINI"</strong> di baris pertama file</li>
+                    <li>Ubah nilai <strong>'ON'</strong> (Tersedia) atau <strong>'OFF'</strong> (Habis)</li>
+                    <li>Save file di GitHub untuk update langsung</li>
+                </ol>
+                
+                <div class="code-location">
+                    <strong>📍 Lokasi Edit:</strong> Baris 8-15 dalam file HTML (di bagian atas)
+                </div>
+            </div>
+
+            <div class="stock-editor">
+                <h3 style="margin-bottom: 15px;">📊 Status Stok Saat Ini:</h3>
+                <div class="stock-grid" id="stock-editor-grid">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <div class="header">
+            <h1>📦 XL AXIS Stock Checker</h1>
+            <p>Cek ketersediaan paket kuota XL | AXIS | LIVE ON</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <h3 id="total-packages">2</h3>
+                <p>Total Paket</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="available-packages">0</h3>
+                <p>Tersedia</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="unavailable-packages">0</h3>
+                <p>Habis</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="🔍 Cari paket..." onkeyup="filterPackages()">
+            </div>
+            <div class="area-filter">
+                <button class="area-btn active" onclick="filterByArea('all')">Semua Area</button>
+                <button class="area-btn" onclick="filterByArea('1')">Area 1</button>
+                <button class="area-btn" onclick="filterByArea('2')">Area 2</button>
+                <button class="area-btn" onclick="filterByArea('3')">Area 3</button>
+                <button class="area-btn" onclick="filterByArea('4')">Area 4</button>
+            </div>
+        </div>
+
+        <div class="package-grid" id="package-grid">
+            <!-- Packages will be dynamically generated -->
+        </div>
+
+        <div class="no-results" id="no-results" style="display: none;">
+            <p>Tidak ada paket yang sesuai dengan pencarian Anda</p>
+        </div>
+    </div>
+
+    <script>
+        const packages = {
+            'akrab-super-mini': {
+                name: '🔥 PROMO SPESIAL! 🔥',
+                price: '48K',
+                subtitle: '✨ AKRAB SUPER MINI – CUMA 48K! ✨',
+                description: '📦 Kuota Super Hemat:',
+                areas: {
+                    1: '13 – 15 GB',
+                    2: '15 – 17 GB',
+                    3: '20 – 22 GB',
+                    4: '30 – 32 GB'
+                },
+                stock: stockSettings['AKRAB SUPER MINI'] === 'ON',
+                isPromo: true,
+                promoText: 'PROMO SPESIAL!'
+            },
+            'akrab-big': {
+                name: '✨ AKRAB BIG – CUMA 56K! ✨',
+                price: '56K',
+                subtitle: '',
+                description: '📌 Kuota Gede, Harga Super Hemat!',
+                areas: {
+                    1: '38 – 40 GB',
+                    2: '40 – 42 GB',
+                    3: '45 – 47 GB',
+                    4: '55 – 57 GB'
+                },
+                stock: stockSettings['AKRAB BIG'] === 'ON',
+                isPromo: true,
+                promoText: 'PROMO SPESIAL!'
+            }
+        };
+
+        let currentFilter = 'all';
+
+        function renderStockEditor() {
+            const grid = document.getElementById('stock-editor-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            Object.entries(packages).forEach(([id, pkg]) => {
+                const item = document.createElement('div');
+                item.className = 'stock-item';
+                
+                item.innerHTML = `
+                    <div class="stock-info">
+                        <div class="stock-name">${pkg.name}</div>
+                        <div class="stock-price">${pkg.price}</div>
+                    </div>
+                    <div class="stock-status">
+                        ${pkg.stock ? '✅ ON' : '❌ OFF'}
+                    </div>
+                `;
+                
+                grid.appendChild(item);
+            });
+        }
+
+        function renderPackages() {
+            const grid = document.getElementById('package-grid');
+            const noResults = document.getElementById('no-results');
+            
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            let visibleCount = 0;
+
+            Object.entries(packages).forEach(([id, pkg]) => {
+                if (shouldShowPackage(id, pkg)) {
+                    const card = createPackageCard(id, pkg);
+                    grid.appendChild(card);
+                    visibleCount++;
+                }
+            });
+
+            if (visibleCount === 0) {
+                noResults.style.display = 'block';
+                grid.style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                grid.style.display = 'grid';
+            }
+
+            updateStats();
+        }
+
+        function shouldShowPackage(id, pkg) {
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const matchesSearch = pkg.name.toLowerCase().includes(searchTerm) || 
+                                pkg.price.toLowerCase().includes(searchTerm);
+
+            if (currentFilter === 'all') {
+                return matchesSearch;
+            }
+
+            return matchesSearch && pkg.areas[currentFilter];
+        }
+
+        function createPackageCard(id, pkg) {
+            const card = document.createElement('div');
+            card.className = `package-card ${!pkg.stock ? 'out-of-stock' : ''} ${pkg.isPromo ? 'promo' : ''}`;
+            
+            const areasToShow = currentFilter === 'all' 
+                ? Object.entries(pkg.areas)
+                : [[currentFilter, pkg.areas[currentFilter]]].filter(([area, quota]) => quota);
+
+            const promoBadge = pkg.isPromo ? `<div class="promo-badge">${pkg.promoText}</div>` : '';
+
+            card.innerHTML = `
+                ${promoBadge}
+                <div class="package-header">
+                    <div class="package-name">${pkg.name}</div>
+                    <div class="package-price">${pkg.price}</div>
+                </div>
+                ${pkg.subtitle ? `<div class="promo-text">${pkg.subtitle}</div>` : ''}
+                <div class="stock-status-card ${pkg.stock ? 'stock-available' : 'stock-unavailable'}">
+                    ${pkg.stock ? '✅ Tersedia' : '❌ Habis'}
+                </div>
+                <div class="description-text">${pkg.description}</div>
+                <ul class="area-list">
+                    ${areasToShow.map(([area, quota]) => `
+                        <li class="area-item">
+                            <span class="area-name">🔹 Area ${area}</span>
+                            <span class="area-quota">${quota}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+                ${id === 'akrab-big' ? `
+                    <div class="bottom-text">
+                        <div class="highlight">⚡ Stok Terbatas!</div>
+                        <div class="highlight">✅ Harga Murah, Kuota Gede</div>
+                        <div class="highlight">✅ Cocok buat harian & sosmed</div>
+                        <div class="action">🚀 Siapa Cepat Dia Dapat – Amankan Kuotamu Sekarang!</div>
+                    </div>
+                ` : ''}
+                ${pkg.isPromo && id !== 'akrab-big' ? '<div style="color: #ff6b6b; font-weight: 600; margin-bottom: 15px; font-size: 0.9rem;">⚡ Stok terbatas, buruan amankan!</div>' : ''}
+            `;
+
+            return card;
+        }
+
+        function filterByArea(area) {
+            currentFilter = area;
+            
+            document.querySelectorAll('.area-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderPackages();
+        }
+
+        function filterPackages() {
+            renderPackages();
+        }
+
+        function updateStats() {
+            const totalPackages = Object.keys(packages).length;
+            const availablePackages = Object.values(packages).filter(pkg => pkg.stock).length;
+            const unavailablePackages = totalPackages - availablePackages;
+
+            const totalEl = document.getElementById('total-packages');
+            const availableEl = document.getElementById('available-packages');
+            const unavailableEl = document.getElementById('unavailable-packages');
+
+            if (totalEl) totalEl.textContent = totalPackages;
+            if (availableEl) availableEl.textContent = availablePackages;
+            if (unavailableEl) unavailableEl.textContent = unavailablePackages;
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            renderStockEditor();
+            renderPackages();
+        });
+
+        // Fallback initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                renderStockEditor();
+                renderPackages();
+            });
+        } else {
+            renderStockEditor();
+            renderPackages();
+        }
+    </script>
+</body>
+</html>
